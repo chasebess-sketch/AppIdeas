@@ -1,0 +1,1114 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Lightbulb, Network, Plus, ArrowLeft, Grid, X, Eye, EyeOff } from 'lucide-react';
+
+const AppIdeasTracker = () => {
+  const [currentScreen, setCurrentScreen] = useState('home');
+  const [apps, setApps] = useState([]);
+  const [ideas, setIdeas] = useState([]);
+  const [showAppForm, setShowAppForm] = useState(false);
+  const [showIdeaForm, setShowIdeaForm] = useState(false);
+  const [viewingIdea, setViewingIdea] = useState(null);
+  const [editingStoryboard, setEditingStoryboard] = useState(null);
+  const [editingIdeaIndex, setEditingIdeaIndex] = useState(null);
+
+  const colors = ['#00ff9f', '#00e5ff', '#ff00ff', '#ffff00', '#ff6b35', '#00ffff'];
+
+  const AnimatedTitle = ({ hue }) => {
+    return (
+      <h1 
+        className="text-6xl font-bold text-center tracking-widest uppercase"
+        style={{
+          fontFamily: "'Quantico', 'Audiowide', 'Electrolize', monospace",
+          fontWeight: 700,
+          letterSpacing: '0.15em',
+          background: `linear-gradient(90deg, hsl(${hue}, 100%, 60%), hsl(${(hue + 60) % 360}, 100%, 60%), hsl(${(hue + 120) % 360}, 100%, 60%))`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          textShadow: `0 0 30px hsla(${hue}, 100%, 60%, 0.5)`,
+          filter: `drop-shadow(0 0 20px hsla(${hue}, 100%, 60%, 0.6))`,
+          backgroundClip: 'text'
+        }}
+      >
+        APP IDEAS
+      </h1>
+    );
+  };
+
+  const [menuHue, setMenuHue] = useState(0);
+  const [flickerColors, setFlickerColors] = useState([0, 120, 240]);
+  const [starPositions, setStarPositions] = useState(() =>
+    Array.from({ length: 200 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 1,
+      hue: Math.random() * 360,
+      brightness: 50 + Math.random() * 50,
+      opacity: 0.3 + Math.random() * 0.7,
+      twinkleSpeed: 2000 + Math.random() * 3000,
+      // Random drift direction and speed - increased
+      vx: (Math.random() - 0.5) * 0.06, // Faster X velocity
+      vy: (Math.random() - 0.5) * 0.06  // Faster Y velocity
+    }))
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMenuHue(prev => (prev + 1) % 360);
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFlickerColors([
+        Math.random() * 360,
+        Math.random() * 360,
+        Math.random() * 360
+      ]);
+    }, 3000); // Very slow, subtle color changes
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStarPositions(prevStars =>
+        prevStars.map(star => {
+          // Larger incremental changes for visible color shifts
+          const hueChange = (Math.random() - 0.5) * 6; // ±3 degrees per update
+          const brightnessChange = (Math.random() - 0.5) * 4; // ±2 per update
+          const opacityChange = (Math.random() - 0.5) * 0.08; // ±0.04 per update
+          
+          // Update position with drift
+          let newX = star.x + star.vx;
+          let newY = star.y + star.vy;
+          
+          // Wrap around edges
+          if (newX > 100) newX = 0;
+          if (newX < 0) newX = 100;
+          if (newY > 100) newY = 0;
+          if (newY < 0) newY = 100;
+          
+          return {
+            ...star,
+            x: newX,
+            y: newY,
+            hue: (star.hue + hueChange + 360) % 360,
+            brightness: Math.max(20, Math.min(95, star.brightness + brightnessChange)),
+            opacity: Math.max(0.15, Math.min(1, star.opacity + opacityChange))
+          };
+        })
+      );
+    }, 150); // Update every 150ms
+    return () => clearInterval(interval);
+  }, []);
+
+  const SlowStarsBackground = () => {
+    return (
+      <div className="fixed inset-0 bg-black" style={{ zIndex: 0 }}>
+        {starPositions.map(star => {
+          const brightness = star.brightness || 70;
+          const opacity = star.opacity || 0.5;
+          return (
+            <div
+              key={star.id}
+              className="absolute rounded-full"
+              style={{
+                left: `${star.x}%`,
+                top: `${star.y}%`,
+                width: `${star.size}px`,
+                height: `${star.size}px`,
+                backgroundColor: `hsl(${star.hue}, 100%, ${brightness}%)`,
+                boxShadow: `0 0 ${star.size * 5}px hsl(${star.hue}, 100%, ${brightness}%)`,
+                opacity: opacity
+              }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className="font-sans">
+      {currentScreen === 'home' && (
+        <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
+          <SlowStarsBackground />
+          <div className="relative z-10">
+            <div className="pt-12 mb-8">
+              <AnimatedTitle hue={menuHue} />
+            </div>
+            
+            <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 200px)', alignItems: 'flex-start', paddingTop: 'calc((100vh - 200px) * 0.1)' }}>
+              <div className="space-y-4 w-full max-w-2xl">
+              <button 
+                onClick={() => setCurrentScreen('apps')} 
+                className="w-full bg-black border-2 rounded-2xl p-6 text-left flex items-center justify-between hover:bg-gray-900 transition-colors" 
+                style={{ 
+                  borderColor: `hsl(${flickerColors[0]}, 100%, 60%)`, 
+                  boxShadow: `0 0 20px hsla(${flickerColors[0]}, 100%, 60%, 0.6)`,
+                  transition: 'border-color 4s ease-in-out, box-shadow 4s ease-in-out'
+                }}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Grid className="text-cyan-400" size={28} />
+                    <h2 className="text-2xl font-semibold">Apps</h2>
+                  </div>
+                  <p className="text-gray-400 text-sm">Your app list + photos</p>
+                </div>
+                <div className="text-cyan-400">›</div>
+              </button>
+              
+              <button 
+                onClick={() => setCurrentScreen('ideas')} 
+                className="w-full bg-black border-2 rounded-2xl p-6 text-left flex items-center justify-between hover:bg-gray-900 transition-colors" 
+                style={{ 
+                  borderColor: `hsl(${flickerColors[1]}, 100%, 60%)`, 
+                  boxShadow: `0 0 20px hsla(${flickerColors[1]}, 100%, 60%, 0.6)`,
+                  transition: 'border-color 4s ease-in-out, box-shadow 4s ease-in-out'
+                }}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Lightbulb className="text-cyan-400" size={28} />
+                    <h2 className="text-2xl font-semibold">Ideas</h2>
+                  </div>
+                  <p className="text-gray-400 text-sm">Quick ideas + storyboard previews</p>
+                </div>
+                <div className="text-cyan-400">›</div>
+              </button>
+              
+              <button 
+                onClick={() => setCurrentScreen('storyboard')} 
+                className="w-full bg-black border-2 rounded-2xl p-6 text-left flex items-center justify-between hover:bg-gray-900 transition-colors" 
+                style={{ 
+                  borderColor: `hsl(${flickerColors[2]}, 100%, 60%)`, 
+                  boxShadow: `0 0 20px hsla(${flickerColors[2]}, 100%, 60%, 0.6)`,
+                  transition: 'border-color 4s ease-in-out, box-shadow 4s ease-in-out'
+                }}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Network className="text-cyan-400" size={28} />
+                    <h2 className="text-2xl font-semibold">Storyboard</h2>
+                  </div>
+                  <p className="text-gray-400 text-sm">Move notes, connect them, save to ideas</p>
+                </div>
+                <div className="text-cyan-400">›</div>
+              </button>
+            </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {currentScreen === 'apps' && (
+        <div className="min-h-screen bg-black text-white relative overflow-hidden">
+          <SlowStarsBackground />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <button 
+                onClick={() => setCurrentScreen('home')} 
+                className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+              >
+                <ArrowLeft size={24} />
+              </button>
+              <h2 className="text-2xl font-semibold">Apps</h2>
+              <button 
+                onClick={() => setShowAppForm(true)} 
+                className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+              >
+                <Plus size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {apps.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-gray-400">Tap + to add an app</p>
+                </div>
+              ) : (
+                apps.map((app, i) => (
+                  <div 
+                    key={i} 
+                    className="border border-cyan-500 rounded-lg p-4 bg-gray-900/50 mb-4"
+                  >
+                    <h3 className="text-xl font-semibold text-cyan-400 mb-2">{app.title}</h3>
+                    <p className="text-gray-300 mb-2">{app.description}</p>
+                    {app.link && (
+                      <a 
+                        href={app.link.startsWith('http') ? app.link : `https://${app.link}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 hover:text-cyan-300 underline text-sm"
+                      >
+                        🔗 {app.link}
+                      </a>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
+          {showAppForm && (
+            <div className="fixed inset-0 bg-black/90 z-50 p-6 overflow-auto">
+              <div className="max-w-2xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-semibold text-white">New App</h3>
+                  <button 
+                    onClick={() => setShowAppForm(false)} 
+                    className="p-2 text-white hover:bg-gray-800 rounded-full transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <input 
+                  type="text" 
+                  id="app-title" 
+                  placeholder="App Title" 
+                  className="w-full bg-gray-900 border border-cyan-500 rounded-lg p-4 mb-4 text-white focus:outline-none focus:border-cyan-400" 
+                />
+                <textarea 
+                  id="app-desc" 
+                  placeholder="Description" 
+                  className="w-full bg-gray-900 border border-cyan-500 rounded-lg p-4 mb-4 text-white h-32 focus:outline-none focus:border-cyan-400" 
+                />
+                <input 
+                  type="text" 
+                  id="app-link" 
+                  placeholder="Link (optional)" 
+                  className="w-full bg-gray-900 border border-cyan-500 rounded-lg p-4 mb-4 text-white focus:outline-none focus:border-cyan-400" 
+                />
+                
+                <button 
+                  onClick={() => {
+                    const title = document.getElementById('app-title').value;
+                    const description = document.getElementById('app-desc').value;
+                    const link = document.getElementById('app-link').value;
+                    if (title) {
+                      setApps([...apps, { title, description, link }]);
+                      setShowAppForm(false);
+                    }
+                  }} 
+                  className="w-full bg-cyan-500 text-black font-semibold py-3 rounded-lg hover:bg-cyan-400 transition-colors"
+                >
+                  Save App
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentScreen === 'ideas' && (
+        <div className="min-h-screen bg-black text-white relative overflow-hidden">
+          <SlowStarsBackground />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <button 
+                onClick={() => setCurrentScreen('home')} 
+                className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+              >
+                <ArrowLeft size={24} />
+              </button>
+              <h2 className="text-2xl font-semibold">Ideas</h2>
+              <button 
+                onClick={() => setShowIdeaForm(true)} 
+                className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+              >
+                <Plus size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {ideas.length === 0 ? (
+                <div className="text-center py-20 border-2 border-dashed border-gray-700 rounded-xl">
+                  <Lightbulb className="mx-auto mb-4 text-gray-600" size={48} />
+                  <p className="text-gray-400 text-xl font-semibold mb-2">No ideas yet</p>
+                </div>
+              ) : (
+                ideas.map((idea, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => setViewingIdea(idea)} 
+                    className="w-full border border-cyan-500 rounded-lg p-4 bg-gray-900/50 text-left hover:bg-gray-800/50 mb-3 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-cyan-400 mb-1">{idea.title}</h3>
+                        <p className="text-gray-400 text-sm">{idea.description || 'No description'}</p>
+                      </div>
+                      {idea.storyboard && idea.storyboard.notes && idea.storyboard.notes.length > 0 && (
+                        <div className="text-cyan-400 flex items-center gap-2">
+                          <Network size={20} />
+                          <span className="text-sm">{idea.storyboard.notes.length} notes</span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+          
+          {showIdeaForm && (
+            <div className="fixed inset-0 bg-black/90 z-50 p-6 overflow-auto">
+              <div className="max-w-2xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-semibold text-white">New Idea</h3>
+                  <button 
+                    onClick={() => setShowIdeaForm(false)} 
+                    className="p-2 text-white hover:bg-gray-800 rounded-full transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <input 
+                  type="text" 
+                  id="idea-title" 
+                  placeholder="Idea Title" 
+                  className="w-full bg-gray-900 border border-cyan-500 rounded-lg p-4 mb-4 text-white focus:outline-none focus:border-cyan-400" 
+                />
+                <textarea 
+                  id="idea-desc" 
+                  placeholder="Brief Description" 
+                  className="w-full bg-gray-900 border border-cyan-500 rounded-lg p-4 mb-4 text-white h-32 focus:outline-none focus:border-cyan-400" 
+                />
+                
+                <button 
+                  onClick={() => {
+                    const title = document.getElementById('idea-title').value;
+                    const description = document.getElementById('idea-desc').value;
+                    if (title) {
+                      setIdeas([...ideas, { title, description, storyboard: null }]);
+                      setShowIdeaForm(false);
+                    }
+                  }} 
+                  className="w-full bg-cyan-500 text-black font-semibold py-3 rounded-lg hover:bg-cyan-400 transition-colors"
+                >
+                  Save Idea
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {viewingIdea && (
+            <div className="fixed inset-0 bg-black/90 z-50 p-6 overflow-auto">
+              <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-3xl font-semibold text-white">{viewingIdea.title}</h3>
+                  <button 
+                    onClick={() => setViewingIdea(null)} 
+                    className="p-2 text-white hover:bg-gray-800 rounded-full transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div className="bg-gray-900 border border-cyan-500 rounded-lg p-6 mb-6">
+                  <h4 className="text-lg font-semibold text-cyan-400 mb-2">Description</h4>
+                  <p className="text-gray-300">{viewingIdea.description || 'No description'}</p>
+                </div>
+                
+                {viewingIdea.storyboard && viewingIdea.storyboard.notes && viewingIdea.storyboard.notes.length > 0 && (
+                  <div className="bg-gray-900 border border-cyan-500 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-cyan-400 mb-4">Storyboard</h4>
+                    <div 
+                      className="relative h-96 bg-gray-800 rounded border border-cyan-500/30 overflow-hidden cursor-pointer hover:border-cyan-500 transition-colors" 
+                      onClick={() => {
+                        setEditingStoryboard(viewingIdea.storyboard);
+                        setEditingIdeaIndex(ideas.findIndex(idea => idea.title === viewingIdea.title));
+                        setCurrentScreen('storyboard');
+                        setViewingIdea(null);
+                      }}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <div className="bg-black/70 px-4 py-2 rounded-lg text-cyan-400 font-semibold">
+                          Click to open and edit
+                        </div>
+                      </div>
+                      
+                      <svg className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
+                        {viewingIdea.storyboard.connections.map((c, idx) => {
+                          const from = viewingIdea.storyboard.notes.find(n => n.id === c.from);
+                          const to = viewingIdea.storyboard.notes.find(n => n.id === c.to);
+                          if (!from || !to) return null;
+                          return (
+                            <line 
+                              key={idx} 
+                              x1={from.x * 0.4 + 50} 
+                              y1={from.y * 0.4 + 50} 
+                              x2={to.x * 0.4 + 50} 
+                              y2={to.y * 0.4 + 50} 
+                              stroke="#00ff9f" 
+                              strokeWidth="2" 
+                              opacity="0.6" 
+                            />
+                          );
+                        })}
+                      </svg>
+                      
+                      {viewingIdea.storyboard.notes.map((n, idx) => (
+                        <div 
+                          key={idx} 
+                          className="absolute px-3 py-2 rounded-lg text-sm font-semibold" 
+                          style={{ 
+                            left: n.x * 0.4 + 30, 
+                            top: n.y * 0.4 + 30, 
+                            backgroundColor: n.color, 
+                            color: '#000', 
+                            boxShadow: `0 0 10px ${n.color}` 
+                          }}
+                        >
+                          {n.title}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentScreen === 'storyboard' && (
+        <StoryboardComponent 
+          setCurrentScreen={setCurrentScreen}
+          ideas={ideas}
+          setIdeas={setIdeas}
+          colors={colors}
+          initialStoryboard={editingStoryboard}
+          setEditingStoryboard={setEditingStoryboard}
+          editingIdeaIndex={editingIdeaIndex}
+          setEditingIdeaIndex={setEditingIdeaIndex}
+        />
+      )}
+    </div>
+  );
+};
+
+const StoryboardComponent = ({ setCurrentScreen, ideas, setIdeas, colors, initialStoryboard, setEditingStoryboard, editingIdeaIndex, setEditingIdeaIndex }) => {
+  const [currentStoryboard, setCurrentStoryboard] = useState(
+    initialStoryboard || { notes: [], connections: [] }
+  );
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [selectedNote, setSelectedNote] = useState(null);
+  const [connectMode, setConnectMode] = useState(null);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [draggingNote, setDraggingNote] = useState(null);
+  const [noteDragStart, setNoteDragStart] = useState({ x: 0, y: 0 });
+  const [editingNote, setEditingNote] = useState(null);
+  const [savingStoryboard, setSavingStoryboard] = useState(false);
+  const [showNoteBodies, setShowNoteBodies] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [lastTouchDistance, setLastTouchDistance] = useState(null);
+  const [gridColor, setGridColor] = useState('rgba(0,255,159,0.1)');
+  const [showGridColorPicker, setShowGridColorPicker] = useState(false);
+
+  const gridColors = [
+    { name: 'Green', value: 'rgba(0,255,159,0.1)' },
+    { name: 'Cyan', value: 'rgba(0,255,255,0.1)' },
+    { name: 'Purple', value: 'rgba(168,85,247,0.1)' },
+    { name: 'Pink', value: 'rgba(255,0,255,0.1)' },
+    { name: 'Orange', value: 'rgba(255,107,53,0.1)' },
+    { name: 'Blue', value: 'rgba(59,130,246,0.1)' }
+  ];
+
+  // Load initial storyboard when provided
+  useEffect(() => {
+    if (initialStoryboard) {
+      setCurrentStoryboard(initialStoryboard);
+    }
+  }, [initialStoryboard]);
+  const createNewNote = () => {
+    setShowColorPicker(true);
+    // Random position between 100-700 for x and 100-500 for y to keep them visible
+    const randomX = Math.floor(Math.random() * 600) + 100;
+    const randomY = Math.floor(Math.random() * 400) + 100;
+    setSelectedNote({ x: randomX, y: randomY, title: 'New note', body: '', color: colors[0], shape: 'square' });
+  };
+
+  const addNote = (color) => {
+    if (selectedNote) {
+      setCurrentStoryboard(p => ({ 
+        ...p, 
+        notes: [...p.notes, { ...selectedNote, color, id: Date.now() }] 
+      }));
+      setSelectedNote(null);
+      setShowColorPicker(false);
+    }
+  };
+
+  const handleNoteMouseDown = (id, e) => {
+    e.stopPropagation();
+    setDraggingNote(id);
+    const note = currentStoryboard.notes.find(n => n.id === id);
+    setNoteDragStart({ 
+      x: e.clientX - note.x - panOffset.x, 
+      y: e.clientY - note.y - panOffset.y, 
+      startX: e.clientX, 
+      startY: e.clientY 
+    });
+  };
+
+  const handleNoteMouseUp = (id, e) => {
+    e.stopPropagation();
+    const dx = e.clientX - noteDragStart.startX;
+    const dy = e.clientY - noteDragStart.startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (connectMode && connectMode !== id) {
+      setCurrentStoryboard(p => ({ 
+        ...p, 
+        connections: [...p.connections, { from: connectMode, to: id }] 
+      }));
+      setConnectMode(null);
+    } else if (dist < 5) {
+      setEditingNote(currentStoryboard.notes.find(n => n.id === id));
+    }
+    setDraggingNote(null);
+  };
+
+  const handleMouseMove = (e) => {
+    if (draggingNote) {
+      setCurrentStoryboard(p => ({ 
+        ...p, 
+        notes: p.notes.map(n => 
+          n.id === draggingNote 
+            ? { ...n, x: e.clientX - noteDragStart.x - panOffset.x, y: e.clientY - noteDragStart.y - panOffset.y } 
+            : n
+        ) 
+      }));
+    } else if (isDragging) {
+      setPanOffset({ 
+        x: e.clientX - dragStart.x, 
+        y: e.clientY - dragStart.y 
+      });
+    }
+  };
+
+  const handleDelete = (type, target) => {
+    if (type === 'connection') {
+      setCurrentStoryboard(p => ({ 
+        ...p, 
+        connections: p.connections.filter(c => !(c.from === target.from && c.to === target.to)) 
+      }));
+    } else {
+      setCurrentStoryboard(p => ({ 
+        notes: p.notes.filter(n => n.id !== target), 
+        connections: p.connections.filter(c => c.from !== target && c.to !== target) 
+      }));
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black text-white overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-black/80 border-b border-gray-800">
+        <button 
+          onClick={() => {
+            setCurrentScreen('home');
+            setEditingStoryboard(null);
+            setEditingIdeaIndex(null);
+          }} 
+          className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowNoteBodies(!showNoteBodies)} 
+            className={`p-2 rounded-full transition-colors ${showNoteBodies ? 'bg-cyan-500 text-black' : 'bg-gray-800 hover:bg-gray-700'}`}
+          >
+            {showNoteBodies ? <Eye size={24} /> : <EyeOff size={24} />}
+          </button>
+          <h2 className="text-xl font-semibold">Storyboard</h2>
+        </div>
+        
+        <div className="flex gap-4 items-center">
+          <button 
+            onClick={() => setShowGridColorPicker(!showGridColorPicker)}
+            className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors relative"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cyan-400">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v6m0 6v6m-6-6h6m6 0h6m-2.636 8.364l-4.243-4.243m0-6.364l4.243-4.243m-12.728 0l4.243 4.243m0 6.364l-4.243 4.243"/>
+            </svg>
+          </button>
+          <button 
+            onClick={createNewNote} 
+            className="p-2 rounded-full bg-cyan-500 text-black hover:bg-cyan-400 transition-colors"
+          >
+            <Plus size={24} />
+          </button>
+          <button 
+            onClick={() => setSavingStoryboard(true)} 
+            className="px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition-colors"
+          >
+            Save
+          </button>
+        </div>
+
+        {showGridColorPicker && (
+          <div className="absolute top-16 right-4 bg-gray-900 rounded-2xl p-4 border border-cyan-500 z-30" style={{ boxShadow: '0 0 30px rgba(0,255,159,0.3)' }}>
+            <h4 className="text-sm font-semibold text-cyan-400 mb-3">Grid Color</h4>
+            <div className="grid grid-cols-3 gap-2">
+              {gridColors.map(gc => (
+                <button
+                  key={gc.value}
+                  onClick={() => {
+                    setGridColor(gc.value);
+                    setShowGridColorPicker(false);
+                  }}
+                  className="w-12 h-12 rounded transition-transform hover:scale-110"
+                  style={{
+                    backgroundColor: gc.value.replace('0.1', '0.8'),
+                    border: gridColor === gc.value ? '2px solid white' : '2px solid transparent'
+                  }}
+                  title={gc.name}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div 
+        className="absolute inset-0 storyboard-grid" 
+        style={{ 
+          backgroundImage: `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`, 
+          backgroundSize: `${30 / zoom}px ${30 / zoom}px`, 
+          cursor: isDragging || draggingNote ? 'grabbing' : 'grab'
+        }}
+        onMouseDown={(e) => { 
+          if (e.target.classList.contains('storyboard-grid')) { 
+            setIsDragging(true); 
+            setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y }); 
+          }
+        }}
+        onMouseMove={handleMouseMove} 
+        onMouseUp={() => { 
+          setDraggingNote(null); 
+          setIsDragging(false); 
+        }} 
+        onMouseLeave={() => { 
+          setDraggingNote(null); 
+          setIsDragging(false); 
+        }}
+        onWheel={(e) => {
+          e.preventDefault();
+          const delta = e.deltaY * -0.001;
+          const newZoom = Math.min(Math.max(0.5, zoom + delta), 3);
+          setZoom(newZoom);
+        }}
+        onTouchStart={(e) => {
+          if (e.touches.length === 2) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const distance = Math.hypot(
+              touch2.clientX - touch1.clientX,
+              touch2.clientY - touch1.clientY
+            );
+            setLastTouchDistance(distance);
+          }
+        }}
+        onTouchMove={(e) => {
+          if (e.touches.length === 2 && lastTouchDistance) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const distance = Math.hypot(
+              touch2.clientX - touch1.clientX,
+              touch2.clientY - touch1.clientY
+            );
+            const delta = (distance - lastTouchDistance) * 0.01;
+            const newZoom = Math.min(Math.max(0.5, zoom + delta), 3);
+            setZoom(newZoom);
+            setLastTouchDistance(distance);
+          }
+        }}
+        onTouchEnd={() => {
+          setLastTouchDistance(null);
+        }}
+      >
+        <svg className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%', transition: 'none' }}>
+          {currentStoryboard.connections.map((c, i) => {
+            const from = currentStoryboard.notes.find(n => n.id === c.from);
+            const to = currentStoryboard.notes.find(n => n.id === c.to);
+            if (!from || !to) return null;
+            
+            const fw = showNoteBodies && from.body ? 200 : from.title.length * 8 + 48;
+            const tw = showNoteBodies && to.body ? 200 : to.title.length * 8 + 48;
+            const fh = showNoteBodies && from.body ? 80 : 40;
+            const th = showNoteBodies && to.body ? 80 : 40;
+            
+            return (
+              <line 
+                key={`${c.from}-${c.to}`} 
+                x1={from.x + panOffset.x + fw / 2} 
+                y1={from.y + panOffset.y + fh / 2} 
+                x2={to.x + panOffset.x + tw / 2} 
+                y2={to.y + panOffset.y + th / 2} 
+                stroke="#00ff9f" 
+                strokeWidth="2" 
+                opacity="0.6"
+              />
+            );
+          })}
+        </svg>
+        
+        {currentStoryboard.notes.map(n => {
+          const shape = n.shape || 'square';
+          let borderRadius = '8px';
+          let width = 'auto';
+          let height = 'auto';
+          let minWidth = showNoteBodies && n.body ? '200px' : '120px';
+          let minHeight = '60px';
+          
+          if (shape === 'circle') {
+            borderRadius = '50%';
+            const size = showNoteBodies && n.body ? '200px' : '120px';
+            width = size;
+            height = size;
+            minWidth = 'unset';
+          } else if (shape === 'rectangle') {
+            minWidth = showNoteBodies && n.body ? '250px' : '180px';
+            minHeight = '60px';
+          }
+          
+          return (
+            <div 
+              key={n.id} 
+              onMouseDown={(e) => handleNoteMouseDown(n.id, e)} 
+              onMouseUp={(e) => handleNoteMouseUp(n.id, e)}
+              className="absolute font-medium cursor-move select-none flex flex-col items-center justify-center text-center" 
+              style={{
+                left: n.x + panOffset.x, 
+                top: n.y + panOffset.y, 
+                backgroundColor: n.color, 
+                color: '#000',
+                boxShadow: `0 0 20px ${n.color}`, 
+                border: connectMode === n.id ? '3px solid white' : 'none',
+                pointerEvents: 'auto', 
+                zIndex: 10, 
+                padding: showNoteBodies && n.body ? '16px' : '16px 20px',
+                minWidth: minWidth,
+                maxWidth: showNoteBodies && n.body ? '300px' : 'none',
+                width: width,
+                height: height,
+                minHeight: minHeight,
+                transition: 'none',
+                borderRadius: borderRadius
+              }}
+            >
+              <div className="font-semibold">{n.title}</div>
+              {showNoteBodies && n.body && (
+                <div className="mt-2 text-sm opacity-80 whitespace-pre-wrap">{n.body}</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      
+      {showColorPicker && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-2xl p-6 border border-cyan-500 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">Choose Color</h3>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {colors.map(c => (
+                <button 
+                  key={c} 
+                  onClick={() => addNote(c)} 
+                  className="w-full h-20 rounded-xl transition-transform hover:scale-105" 
+                  style={{ 
+                    backgroundColor: c, 
+                    boxShadow: `0 0 20px ${c}` 
+                  }} 
+                />
+              ))}
+            </div>
+            <button 
+              onClick={() => {
+                setShowColorPicker(false);
+                setSelectedNote(null);
+              }} 
+              className="w-full bg-gray-700 text-white font-semibold py-3 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {editingNote && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" 
+          onClick={() => setEditingNote(null)}
+        >
+          <div 
+            className="bg-gray-900 rounded-2xl p-6 border border-cyan-500 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-white">Edit Note</h3>
+              <button 
+                onClick={() => setEditingNote(null)} 
+                className="p-2 text-white hover:bg-gray-800 rounded-full transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <input 
+              type="text" 
+              id="note-title" 
+              defaultValue={editingNote.title} 
+              placeholder="Title" 
+              className="w-full bg-gray-800 border border-cyan-500 rounded-lg p-4 mb-4 text-white focus:outline-none focus:border-cyan-400" 
+            />
+            <textarea 
+              id="note-body" 
+              defaultValue={editingNote.body} 
+              placeholder="Body" 
+              className="w-full bg-gray-800 border border-cyan-500 rounded-lg p-4 mb-4 text-white h-32 resize-none focus:outline-none focus:border-cyan-400" 
+            />
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-400 mb-3">Color:</p>
+              <div className="grid grid-cols-6 gap-3">
+                {colors.map(c => (
+                  <button 
+                    key={c} 
+                    onClick={() => {
+                      setCurrentStoryboard(p => ({ 
+                        ...p, 
+                        notes: p.notes.map(n => n.id === editingNote.id ? { ...n, color: c } : n) 
+                      }));
+                      setEditingNote({ ...editingNote, color: c });
+                    }} 
+                    className="w-12 h-12 rounded-full transition-transform hover:scale-110" 
+                    style={{ 
+                      backgroundColor: c, 
+                      boxShadow: editingNote.color === c ? '0 0 0 3px white' : `0 0 10px ${c}` 
+                    }} 
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-400 mb-3">Shape:</p>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => {
+                    setCurrentStoryboard(p => ({
+                      ...p,
+                      notes: p.notes.map(n => n.id === editingNote.id ? { ...n, shape: 'square' } : n)
+                    }));
+                    setEditingNote({ ...editingNote, shape: 'square' });
+                  }}
+                  className="p-4 bg-gray-800 rounded-lg border-2 transition-colors hover:bg-gray-700"
+                  style={{ borderColor: editingNote.shape === 'square' ? '#00ff9f' : 'transparent' }}
+                >
+                  <div className="w-12 h-12 mx-auto" style={{ backgroundColor: editingNote.color }}></div>
+                  <p className="text-xs text-center mt-2 text-white">Square</p>
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentStoryboard(p => ({
+                      ...p,
+                      notes: p.notes.map(n => n.id === editingNote.id ? { ...n, shape: 'circle' } : n)
+                    }));
+                    setEditingNote({ ...editingNote, shape: 'circle' });
+                  }}
+                  className="p-4 bg-gray-800 rounded-lg border-2 transition-colors hover:bg-gray-700"
+                  style={{ borderColor: editingNote.shape === 'circle' ? '#00ff9f' : 'transparent' }}
+                >
+                  <div className="w-12 h-12 mx-auto rounded-full" style={{ backgroundColor: editingNote.color }}></div>
+                  <p className="text-xs text-center mt-2 text-white">Circle</p>
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentStoryboard(p => ({
+                      ...p,
+                      notes: p.notes.map(n => n.id === editingNote.id ? { ...n, shape: 'rectangle' } : n)
+                    }));
+                    setEditingNote({ ...editingNote, shape: 'rectangle' });
+                  }}
+                  className="p-4 bg-gray-800 rounded-lg border-2 transition-colors hover:bg-gray-700"
+                  style={{ borderColor: editingNote.shape === 'rectangle' ? '#00ff9f' : 'transparent' }}
+                >
+                  <div className="w-16 h-8 mx-auto" style={{ backgroundColor: editingNote.color }}></div>
+                  <p className="text-xs text-center mt-2 text-white">Rectangle</p>
+                </button>
+              </div>
+            </div>
+            
+            {currentStoryboard.connections.filter(c => c.from === editingNote.id || c.to === editingNote.id).length > 0 && (
+              <div className="mb-4 p-4 bg-gray-800 rounded-lg">
+                <p className="text-sm text-gray-400 mb-2">Connected to:</p>
+                {currentStoryboard.connections.filter(c => c.from === editingNote.id || c.to === editingNote.id).map(conn => {
+                  const otherNoteId = conn.from === editingNote.id ? conn.to : conn.from;
+                  const otherNote = currentStoryboard.notes.find(n => n.id === otherNoteId);
+                  if (!otherNote) return null;
+                  
+                  return (
+                    <div 
+                      key={`${conn.from}-${conn.to}`} 
+                      className="flex items-center justify-between bg-gray-900 p-2 rounded mb-2"
+                    >
+                      <span className="text-white text-sm">{otherNote.title}</span>
+                      <button 
+                        onClick={() => handleDelete('connection', conn)} 
+                        className="p-1 hover:bg-red-600 rounded transition-colors"
+                      >
+                        <svg 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          className="text-red-500"
+                        >
+                          <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            <div className="flex gap-3 mb-3">
+              <button 
+                onClick={() => { 
+                  setConnectMode(editingNote.id); 
+                  setEditingNote(null); 
+                }} 
+                className="flex-1 bg-gray-700 text-white font-semibold py-3 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Connect
+              </button>
+              <button 
+                onClick={() => {
+                  const title = document.getElementById('note-title').value;
+                  const body = document.getElementById('note-body').value;
+                  setCurrentStoryboard(p => ({ 
+                    ...p, 
+                    notes: p.notes.map(n => n.id === editingNote.id ? { ...n, title, body } : n) 
+                  }));
+                  setEditingNote(null);
+                }} 
+                className="flex-1 bg-cyan-500 text-black font-semibold py-3 rounded-lg hover:bg-cyan-400 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+            
+            <button 
+              onClick={() => { 
+                if (window.confirm('Delete this note?')) { 
+                  handleDelete('note', editingNote.id); 
+                  setEditingNote(null); 
+                }
+              }} 
+              className="w-full bg-red-600 text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete Note
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {savingStoryboard && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" 
+          onClick={() => setSavingStoryboard(false)}
+        >
+          <div 
+            className="bg-gray-900 rounded-2xl p-6 border border-cyan-500 max-w-md w-full mx-4" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-white">Save Storyboard</h3>
+              <button 
+                onClick={() => setSavingStoryboard(false)} 
+                className="p-2 text-white hover:bg-gray-800 rounded-full transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <input 
+              type="text" 
+              id="storyboard-title" 
+              defaultValue={editingIdeaIndex !== null ? ideas[editingIdeaIndex].title : ''}
+              placeholder="Idea Title" 
+              className="w-full bg-gray-800 border border-cyan-500 rounded-lg p-4 mb-4 text-white focus:outline-none focus:border-cyan-400" 
+            />
+            <textarea 
+              id="storyboard-desc" 
+              defaultValue={editingIdeaIndex !== null ? ideas[editingIdeaIndex].description : ''}
+              placeholder="Brief Description" 
+              className="w-full bg-gray-800 border border-cyan-500 rounded-lg p-4 mb-4 text-white h-32 resize-none focus:outline-none focus:border-cyan-400" 
+            />
+            
+            <button 
+              onClick={() => {
+                const title = document.getElementById('storyboard-title').value;
+                const description = document.getElementById('storyboard-desc').value;
+                
+                // If editing an existing idea, update it
+                if (editingIdeaIndex !== null) {
+                  const updatedIdeas = [...ideas];
+                  updatedIdeas[editingIdeaIndex] = {
+                    title: title || updatedIdeas[editingIdeaIndex].title,
+                    description: description || updatedIdeas[editingIdeaIndex].description,
+                    storyboard: {
+                      notes: currentStoryboard.notes.map(n => ({ ...n })),
+                      connections: currentStoryboard.connections.map(c => ({ ...c }))
+                    }
+                  };
+                  setIdeas(updatedIdeas);
+                  setSavingStoryboard(false);
+                  setEditingStoryboard(null);
+                  setEditingIdeaIndex(null);
+                  setCurrentScreen('ideas');
+                } else {
+                  // Creating a new idea - need title and description
+                  if (title && currentStoryboard.notes.length > 0) {
+                    setIdeas([
+                      ...ideas, 
+                      { 
+                        title, 
+                        description, 
+                        storyboard: { 
+                          notes: currentStoryboard.notes.map(n => ({ ...n })), 
+                          connections: currentStoryboard.connections.map(c => ({ ...c })) 
+                        } 
+                      }
+                    ]);
+                    setSavingStoryboard(false);
+                    setCurrentScreen('ideas');
+                  }
+                }
+              }} 
+              className="w-full bg-cyan-500 text-black font-semibold py-3 rounded-lg hover:bg-cyan-400 transition-colors"
+            >
+              {editingIdeaIndex !== null ? 'Update Idea' : 'Save to Ideas'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AppIdeasTracker;
